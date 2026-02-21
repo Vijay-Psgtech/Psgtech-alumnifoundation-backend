@@ -1,0 +1,93 @@
+// backend/Server.js
+const express  = require("express");
+const cors     = require("cors");
+const dotenv   = require("dotenv");
+const connectDB = require("./config/db");
+
+dotenv.config();
+
+const app = express();
+connectDB();
+
+// ── CORS ─────────────────────────────────────────────────────────
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+app.use(express.json());
+
+// ── Health check ─────────────────────────────────────────────────
+app.get("/api/health", (_req, res) =>
+  res.json({ message: "Server is running", status: "OK" })
+);
+
+// ── Routes ───────────────────────────────────────────────────────
+// Auth: register, login, forgot-password, verify-otp, reset-password, profile
+app.use("/api/auth",             require("./routes/auth"));
+
+// Alumni directory (public + protected profile update)
+app.use("/api/alumni",           require("./routes/alumni"));
+
+// Admin simple routes (approve/reject/stats) — uses Alumni model + isAdmin flag
+app.use("/api/admin",            require("./routes/admin"));
+
+// Admin auth (separate Admin model with fullName/role/permissions)
+app.use("/api/admin/auth",       require("./routes/adminAuth"));
+
+// Admin dashboard (full alumni mgmt + donations + stats)
+app.use("/api/admin/dashboard",  require("./routes/adminDash"));
+
+// Donations (public create + protected mine + admin all)
+app.use("/api/donations",        require("./routes/donations"));
+
+// ── 404 handler ──────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// ── Error handler ────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+  });
+});
+
+// ── Start ────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`\n🚀 PSG Alumni Backend running on port ${PORT}`);
+  console.log(`\n📋 Routes:`);
+  console.log(`   POST /api/auth/register`);
+  console.log(`   POST /api/auth/login`);
+  console.log(`   POST /api/auth/forgot-password`);
+  console.log(`   POST /api/auth/verify-otp`);
+  console.log(`   POST /api/auth/reset-password`);
+  console.log(`   GET  /api/auth/profile`);
+  console.log(`   PUT  /api/auth/change-password`);
+  console.log(`   GET  /api/alumni`);
+  console.log(`   GET  /api/admin/pending`);
+  console.log(`   PUT  /api/admin/approve/:id`);
+  console.log(`   PUT  /api/admin/reject/:id`);
+  console.log(`   GET  /api/admin/dashboard/stats`);
+  console.log(`   GET  /api/admin/dashboard/alumni/all`);
+  console.log(`   GET  /api/donations/mine`);
+});

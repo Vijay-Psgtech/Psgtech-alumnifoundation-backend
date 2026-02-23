@@ -91,6 +91,14 @@
         }
       });
 
+      // if user sent geo coordinates, map them into the location field
+      if (req.body.coordinates) {
+        updateData.location = {
+          type: "Point",
+          coordinates: req.body.coordinates,
+        };
+      }
+
       const alumni = await Alumni.findByIdAndUpdate(req.params.id, updateData, {
         new: true,
         runValidators: true,

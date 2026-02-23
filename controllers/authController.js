@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
     const {
       firstName, lastName, email, password, phone,
       department, graduationYear, rollNumber,
-      currentCompany, jobTitle, country, city, linkedin,
+      currentCompany, jobTitle, country, city, coordinates, linkedin,
     } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
@@ -42,7 +42,12 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       phone, department,
       graduationYear: Number(graduationYear),
-      rollNumber, currentCompany, jobTitle, country, city, linkedin,
+      rollNumber, currentCompany, jobTitle, country, city, 
+      location:{
+        type: "Point",
+        coordinates
+      },
+      linkedin,
       isApproved: false,
       isAdmin: false,
     });

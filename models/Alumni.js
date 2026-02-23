@@ -63,11 +63,15 @@ const alumniSchema = new mongoose.Schema(
     // Location Information (for Alumni Map)
     country: {
       type: String,
-      required: [true, "Country is required"],
+
     },
     city: {
       type: String,
-      required: [true, "City is required"],
+    },
+
+    location: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], required: true }, // [lng, lat]
     },
 
     // Status

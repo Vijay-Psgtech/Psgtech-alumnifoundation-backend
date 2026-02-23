@@ -161,10 +161,25 @@
         groupedByCountry[a.country].push(a);
       });
 
+      // Group by city within each country
+      Object.keys(groupedByCountry).forEach((country) => {
+        const cityGroups = {};
+        groupedByCountry[country].forEach((a) => {
+          if (!cityGroups[a.city]) {
+            cityGroups[a.city] = [];
+          }
+          cityGroups[a.city].push(a);
+        });
+        groupedByCountry[country] = cityGroups;
+      });
+
+
       // Calculate cities
       const cities = new Set();
       alumni.forEach((a) => {
-        cities.add(`${a.city}-${a.country}`);
+        if (a.city) {
+          cities.add(a.city);
+        }      
       });
 
       res.json({
@@ -175,7 +190,7 @@
           stats: {
             totalAlumni: alumni.length,
             countriesRepresented: Object.keys(groupedByCountry).length,
-            citiesRepresented: cities.size,
+            citiesRepresented: Object.keys(cities).length,
           },
         },
       });

@@ -226,17 +226,13 @@ exports.getDashboardStats = async (req, res) => {
     res.json({
       message: "Dashboard statistics retrieved successfully",
       stats: {
-        alumni: {
-          total: totalAlumni,
-          approved: approvedAlumni,
-          pending: pendingAlumni,
-          admins: adminAlumni,
-        },
-        donations: {
-          completed: completedDonations.length,
-          pending: pendingDonations,
-          totalAmount: completedDonations.reduce((sum, d) => sum + d.amount, 0),
-        },
+        totalAlumni: totalAlumni || 0,
+        approvedAlumni: approvedAlumni || 0,
+        pendingAlumni: pendingAlumni || 0,
+        adminAlumni: adminAlumni || 0,
+        completedDonations: completedDonations.length || 0,
+        totalDonatedAmount: completedDonations.reduce((sum, d) => sum + d.amount, 0),
+        pendingDonations: pendingDonations || 0,
       },
     });
   } catch (error) {

@@ -59,6 +59,12 @@ app.use("/api/admin/dashboard",  require("./routes/adminDash"));
 // Donations (public create + protected mine + admin all)
 app.use("/api/donations",        require("./routes/donations"));
 
+// ── NEW: EVENTS API (Create, Read, Update, Delete) ───────────────
+app.use("/api/events",           require("./routes/events"));
+
+// ── NEW: ALBUMS API (Create, Read, Update, Delete) ───────────────
+app.use("/api/albums",           require("./routes/albums"));
+
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });

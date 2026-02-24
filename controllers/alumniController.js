@@ -173,15 +173,6 @@
         groupedByCountry[country] = cityGroups;
       });
 
-
-      // Calculate cities
-      const cities = new Set();
-      alumni.forEach((a) => {
-        if (a.city) {
-          cities.add(a.city);
-        }      
-      });
-
       res.json({
         message: "Map data retrieved successfully",
         data: {
@@ -190,7 +181,7 @@
           stats: {
             totalAlumni: alumni.length,
             countriesRepresented: Object.keys(groupedByCountry).length,
-            citiesRepresented: Object.keys(cities).length,
+            citiesRepresented: Object.keys(groupedByCountry).reduce((acc, country) => acc + Object.keys(groupedByCountry[country]).length, 0),
           },
         },
       });

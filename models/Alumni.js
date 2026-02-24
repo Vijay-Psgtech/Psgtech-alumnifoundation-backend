@@ -19,7 +19,10 @@ const alumniSchema = new mongoose.Schema(
       required: [true, "Email is required"],
       unique: true,
       lowercase: true,
-      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please enter a valid email"],
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email",
+      ],
     },
     password: {
       type: String,
@@ -63,14 +66,17 @@ const alumniSchema = new mongoose.Schema(
     // Location Information (for Alumni Map)
     country: {
       type: String,
-
     },
     city: {
       type: String,
     },
 
+    fullAddress: {
+      type: String,
+    },
+
     location: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: { type: String, enum: ["Point"], default: "Point" },
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
 
@@ -96,7 +102,7 @@ const alumniSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt
-  }
+  },
 );
 
 // ✅ FIXED: Remove duplicate indexes - only use schema.index()

@@ -13,16 +13,28 @@ const generateToken = (alumni) =>
   jwt.sign(
     { id: alumni._id, email: alumni.email, isAdmin: alumni.isAdmin },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
   try {
     const {
-      firstName, lastName, email, password, phone,
-      department, graduationYear, rollNumber,
-      currentCompany, jobTitle, country, city, coordinates, linkedin,
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
+      department,
+      graduationYear,
+      rollNumber,
+      currentCompany,
+      jobTitle,
+      country,
+      city,
+      fullAddress,
+      coordinates,
+      linkedin,
     } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
@@ -37,15 +49,22 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newAlumni = new Alumni({
-      firstName, lastName,
+      firstName,
+      lastName,
       email: email.toLowerCase(),
       password: hashedPassword,
-      phone, department,
+      phone,
+      department,
       graduationYear: Number(graduationYear),
-      rollNumber, currentCompany, jobTitle, country, city, 
-      location:{
+      rollNumber,
+      currentCompany,
+      jobTitle,
+      country,
+      city,
+      fullAddress,
+      location: {
         type: "Point",
-        coordinates
+        coordinates,
       },
       linkedin,
       isApproved: false,
@@ -71,7 +90,9 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error("Register Error:", error);
-    res.status(500).json({ message: "Registration failed", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Registration failed", error: error.message });
   }
 };
 
@@ -86,7 +107,9 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Email and password required" });
     }
 
-    const alumni = await Alumni.findOne({ email: email.toLowerCase() }).select("+password");
+    const alumni = await Alumni.findOne({ email: email.toLowerCase() }).select(
+      "+password",
+    );
 
     if (!alumni) {
       return res.status(401).json({ message: "Invalid email or password" });
@@ -102,7 +125,9 @@ exports.login = async (req, res) => {
     const token = generateToken(alumni);
 
     res.json({
-      message: alumni.isApproved ? "Login successful" : "Login successful. Awaiting admin approval.",
+      message: alumni.isApproved
+        ? "Login successful"
+        : "Login successful. Awaiting admin approval.",
       token,
       alumni: {
         _id: alumni._id,
@@ -141,11 +166,15 @@ exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Both current and new password required" });
+      return res
+        .status(400)
+        .json({ message: "Both current and new password required" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 6 characters" });
     }
 
     const alumni = await Alumni.findById(req.user.id).select("+password");
@@ -181,7 +210,9 @@ exports.forgotPassword = async (req, res) => {
     const alumni = await Alumni.findOne({ email: email.toLowerCase() });
     if (!alumni) {
       // Don't reveal whether email exists — generic message
-      return res.status(404).json({ message: "No account found with this email address" });
+      return res
+        .status(404)
+        .json({ message: "No account found with this email address" });
     }
 
     // Generate 6-digit OTP
@@ -220,16 +251,22 @@ exports.verifyOtp = async (req, res) => {
     const stored = otpStore.get(email.toLowerCase());
 
     if (!stored) {
-      return res.status(400).json({ message: "OTP not found. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP not found. Please request a new one." });
     }
 
     if (Date.now() > stored.expiresAt) {
       otpStore.delete(email.toLowerCase());
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP has expired. Please request a new one." });
     }
 
     if (stored.otp !== otp.toString()) {
-      return res.status(400).json({ message: "Invalid OTP. Please try again." });
+      return res
+        .status(400)
+        .json({ message: "Invalid OTP. Please try again." });
     }
 
     res.json({ message: "OTP verified successfully" });
@@ -246,23 +283,31 @@ exports.resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 
     if (!email || !otp || !newPassword) {
-      return res.status(400).json({ message: "Email, OTP, and new password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email, OTP, and new password are required" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
 
     // Verify OTP again before resetting
     const stored = otpStore.get(email.toLowerCase());
 
     if (!stored) {
-      return res.status(400).json({ message: "OTP not found. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP not found. Please request a new one." });
     }
 
     if (Date.now() > stored.expiresAt) {
       otpStore.delete(email.toLowerCase());
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP has expired. Please request a new one." });
     }
 
     if (stored.otp !== otp.toString()) {

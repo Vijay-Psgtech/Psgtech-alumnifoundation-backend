@@ -3,6 +3,14 @@ const Admin = require("../models/Admin");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
+// ── Cookie options ──────────────────────────────────────────
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
 // ✅ Generate JWT Token for Admin
 const generateAdminToken = (admin) => {
   return jwt.sign(
@@ -53,9 +61,11 @@ exports.adminLogin = async (req, res) => {
     // Update last login
     await Admin.findByIdAndUpdate(admin._id, { lastLogin: new Date() });
 
+    // ── Set JWT as HttpOnly cookie ───────────────────────────────
+    res.cookie("token", token, COOKIE_OPTIONS);
+
     res.json({
       message: "Admin login successful",
-      token,
       admin: {
         id: admin._id,
         email: admin.email,
@@ -181,13 +191,16 @@ exports.changePassword = async (req, res) => {
 };
 
 // @route   POST /api/admin/auth/logout
-// @desc    Admin logout (handled on frontend by clearing token)
+// @desc    Admin logout — clears the HttpOnly cookie
 // @access  Private/Admin
 exports.adminLogout = async (req, res) => {
   try {
-    res.json({
-      message: "Admin logged out successfully",
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
+    res.json({ message: "Admin logged out successfully" });
   } catch (error) {
     console.error("Logout Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });

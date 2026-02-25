@@ -1,6 +1,5 @@
 // backend/middleware/auth.js
-// ✅ Single source of truth for auth middleware.
-//    Replaces the split between authenticate.js and auth.js
+// ✅ Reads JWT from HttpOnly cookie (preferred) with fallback to Authorization header.
 //    Both authMiddleware and adminMiddleware exported here.
 
 const jwt = require("jsonwebtoken");
@@ -8,7 +7,10 @@ const jwt = require("jsonwebtoken");
 // ── Verify JWT token ─────────────────────────────────────────────
 const authMiddleware = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    // Prefer HttpOnly cookie; fall back to Authorization header for API clients
+    const token =
+      req.cookies?.token ||
+      req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ message: "No token provided" });

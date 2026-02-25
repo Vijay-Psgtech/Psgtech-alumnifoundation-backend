@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   register,
   login,
+  logout,
   getProfile,
   changePassword,
   forgotPassword,
@@ -15,6 +16,7 @@ const { authMiddleware } = require("../middleware/auth");
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-otp", verifyOtp);
 router.post("/reset-password", resetPassword);

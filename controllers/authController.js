@@ -8,6 +8,14 @@ const crypto = require("crypto");
 // In production replace with Redis or a DB collection
 const otpStore = new Map();
 
+// ─── Helper: cookie options ──────────────────────────────────────
+const COOKIE_OPTIONS = {
+  httpOnly: true,                                  // JS cannot access
+  secure: process.env.NODE_ENV === "production",   // HTTPS only in prod
+  sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,                // 7 days (ms)
+};
+
 // ─── Helper: generate JWT ────────────────────────────────────────
 const generateToken = (alumni) =>
   jwt.sign(
@@ -76,9 +84,11 @@ exports.register = async (req, res) => {
     // Issue a token so they can poll /profile for approval status
     const token = generateToken(newAlumni);
 
+    // ── Set JWT as HttpOnly cookie ───────────────────────────────
+    res.cookie("token", token, COOKIE_OPTIONS);
+
     res.status(201).json({
       message: "Registration successful! Waiting for admin approval.",
-      token,
       alumni: {
         _id: newAlumni._id,
         firstName: newAlumni.firstName,
@@ -120,15 +130,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // ✅ FIX: Don't block login for unapproved — return token + isApproved:false
+    // ✅ FIX: Don't block login for unapproved — return isApproved:false
     // Frontend will redirect to /alumni/register (pending page) via ProtectedRoute
     const token = generateToken(alumni);
+
+    // ── Set JWT as HttpOnly cookie ───────────────────────────────
+    res.cookie("token", token, COOKIE_OPTIONS);
 
     res.json({
       message: alumni.isApproved
         ? "Login successful"
         : "Login successful. Awaiting admin approval.",
-      token,
       alumni: {
         _id: alumni._id,
         firstName: alumni.firstName,
@@ -331,4 +343,14 @@ exports.resetPassword = async (req, res) => {
     console.error("Reset Password Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+// @route   POST /api/auth/logout
+exports.logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  });
+  res.json({ message: "Logged out successfully" });
 };

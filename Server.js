@@ -52,9 +52,6 @@ app.use("/api/alumni",           require("./routes/alumni"));
 // Admin simple routes (approve/reject/stats) — uses Alumni model + isAdmin flag
 app.use("/api/admin",            require("./routes/admin"));
 
-// Admin auth (separate Admin model with fullName/role/permissions)
-app.use("/api/admin/auth",       require("./routes/adminAuth"));
-
 // Admin dashboard (full alumni mgmt + donations + stats)
 app.use("/api/admin/dashboard",  require("./routes/adminDash"));
 

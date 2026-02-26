@@ -1,6 +1,3 @@
-// backend/middleware/adminAuth.js
-// ✅ Kept for backwards compatibility (adminAuth routes import this)
-//    Now delegates to the unified auth middleware chain.
 const { authMiddleware, adminMiddleware } = require("./auth");
 
 const adminAuth = (req, res, next) => {

@@ -50,6 +50,9 @@ app.use("/api/auth",             require("./routes/auth"));
 // ✅ NEW: DEPARTMENTS API (Dynamic departments management)
 app.use("/api/departments", require("./routes/departments"));
 
+// Chapters must be mounted before /api/alumni, otherwise /api/alumni/:id catches /api/alumni/chapters
+app.use("/api/alumni/chapters", require("./routes/chapters"));
+
 // Alumni directory (public + protected profile update)
 app.use("/api/alumni",           require("./routes/alumni"));
 

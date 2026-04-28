@@ -1,4 +1,3 @@
-// backend/Server.js
 const express      = require("express");
 const cors         = require("cors");
 const cookieParser = require("cookie-parser");
@@ -36,6 +35,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static("uploads"));
+
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
@@ -63,6 +64,10 @@ app.use("/api/events",           require("./routes/events"));
 
 // ── NEW: ALBUMS API (Create, Read, Update, Delete) ───────────────
 app.use("/api/albums",           require("./routes/albums"));
+
+// User management (Admin only)
+app.use("/api/users", require("./routes/users"));
+
 
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {

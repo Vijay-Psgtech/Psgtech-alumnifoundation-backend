@@ -11,10 +11,11 @@ const albumSchema = new mongoose.Schema(
     photos: { type: Number, default: 0 },
     accent: { type: String, default: "#b8882a" },
     tags: [String],
+    images: [String],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Album", albumSchema);

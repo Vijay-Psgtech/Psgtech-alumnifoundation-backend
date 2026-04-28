@@ -77,6 +77,9 @@ app.use("/api/newsletters", require("./routes/newsletters"));
 // Notifications (alumni submit + admin approve/reject)
 app.use("/api/notifications", require("./routes/notifications"));
 
+// Reports routes for admin
+app.use("/api/reports", require("./routes/adminReports"));
+
 // User management (Admin only)
 app.use("/api/users", require("./routes/users"));
 

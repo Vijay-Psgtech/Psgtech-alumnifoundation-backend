@@ -1,4 +1,3 @@
-// backend/Server.js
 const express      = require("express");
 const cors         = require("cors");
 const cookieParser = require("cookie-parser");
@@ -36,6 +35,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static("uploads"));
+
 
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
@@ -45,6 +46,12 @@ app.get("/api/health", (_req, res) =>
 // ── Routes ───────────────────────────────────────────────────────
 // Auth: register, login, forgot-password, verify-otp, reset-password, profile
 app.use("/api/auth",             require("./routes/auth"));
+
+// ✅ NEW: DEPARTMENTS API (Dynamic departments management)
+app.use("/api/departments", require("./routes/departments"));
+
+// Chapters must be mounted before /api/alumni, otherwise /api/alumni/:id catches /api/alumni/chapters
+app.use("/api/alumni/chapters", require("./routes/chapters"));
 
 // Alumni directory (public + protected profile update)
 app.use("/api/alumni",           require("./routes/alumni"));
@@ -63,6 +70,16 @@ app.use("/api/events",           require("./routes/events"));
 
 // ── NEW: ALBUMS API (Create, Read, Update, Delete) ───────────────
 app.use("/api/albums",           require("./routes/albums"));
+
+// ── NEW: NEWSLETTERS API (Create, Read, Update, Delete) ───────────────
+app.use("/api/newsletters", require("./routes/newsletters"));
+
+// Notifications (alumni submit + admin approve/reject)
+app.use("/api/notifications", require("./routes/notifications"));
+
+// User management (Admin only)
+app.use("/api/users", require("./routes/users"));
+
 
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {

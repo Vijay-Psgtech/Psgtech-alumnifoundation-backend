@@ -71,6 +71,9 @@ app.use("/api/events",           require("./routes/events"));
 // ── NEW: ALBUMS API (Create, Read, Update, Delete) ───────────────
 app.use("/api/albums",           require("./routes/albums"));
 
+// ── NEW: NEWSLETTERS API (Create, Read, Update, Delete) ───────────────
+app.use("/api/newsletters", require("./routes/newsletters"));
+
 // User management (Admin only)
 app.use("/api/users", require("./routes/users"));
 

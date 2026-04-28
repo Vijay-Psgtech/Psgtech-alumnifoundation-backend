@@ -47,6 +47,9 @@ app.get("/api/health", (_req, res) =>
 // Auth: register, login, forgot-password, verify-otp, reset-password, profile
 app.use("/api/auth",             require("./routes/auth"));
 
+// ✅ NEW: DEPARTMENTS API (Dynamic departments management)
+app.use("/api/departments", require("./routes/departments"));
+
 // Alumni directory (public + protected profile update)
 app.use("/api/alumni",           require("./routes/alumni"));
 

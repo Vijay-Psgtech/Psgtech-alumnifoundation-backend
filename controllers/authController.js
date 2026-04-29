@@ -1,8 +1,10 @@
 // backend/controllers/authController.js
+const User = require("../models/Users");
 const Alumni = require("../models/Alumni");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { transporter } = require("../config/mailer");
 
 // In-memory OTP store: { email: { otp, expiresAt } }
 // In production replace with Redis or a DB collection
@@ -10,19 +12,17 @@ const otpStore = new Map();
 
 // ─── Helper: cookie options ──────────────────────────────────────
 const COOKIE_OPTIONS = {
-  httpOnly: true,                                  // JS cannot access
-  secure: process.env.NODE_ENV === "production",   // HTTPS only in prod
+  httpOnly: true, // JS cannot access
+  secure: process.env.NODE_ENV === "production", // HTTPS only in prod
   sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,                // 7 days (ms)
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (ms)
 };
 
 // ─── Helper: generate JWT ────────────────────────────────────────
-const generateToken = (alumni) =>
-  jwt.sign(
-    { id: alumni._id, email: alumni.email, isAdmin: alumni.isAdmin },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" },
-  );
+const generateToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
 
 // @route   POST /api/auth/register
 exports.register = async (req, res) => {
@@ -33,142 +33,292 @@ exports.register = async (req, res) => {
       email,
       password,
       phone,
-      department,
-      graduationYear,
       rollNumber,
-      currentCompany,
+      gender,
+      occupation,
+      department,
+      programmeType,
+      degree,
+      batchYear,
+      studyStartYear,
+      studyEndYear,
       jobTitle,
-      country,
-      city,
-      fullAddress,
-      coordinates,
+      currentCompany,
+      industry,
+      officeContact,
       linkedin,
+      twitter,
+      instagram,
+      facebook,
+      website,
+      city,
+      country,
+      fullAddress,
     } = req.body;
 
-    if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({ message: "Required fields missing" });
+    if (!firstName || !email || !password) {
+      return res.status(400).json({
+        message: "Required fields missing",
+      });
     }
 
-    const existingAlumni = await Alumni.findOne({ email: email.toLowerCase() });
+    const existingAlumni = await Alumni.findOne({
+      email: email.toLowerCase(),
+    });
+
     if (existingAlumni) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({
+        message: "Email already registered",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newAlumni = new Alumni({
+    const coordinates = req.body.coordinates
+      ? JSON.parse(req.body.coordinates)
+      : [0, 0];
+
+    const officeAddress = req.body.officeAddress
+      ? JSON.parse(req.body.officeAddress)
+      : {};
+
+    const files = {
+      businessCard: req.files?.businessCard?.[0]
+        ? `alumni/${req.alumniId}/${req.files.businessCard[0].filename}`
+        : null,
+
+      idCard: req.files?.idCard?.[0]
+        ? `alumni/${req.alumniId}/${req.files.idCard[0].filename}`
+        : null,
+
+      entrepreneurPoster: req.files?.entrepreneurPoster?.[0]
+        ? `alumni/${req.alumniId}/${req.files.entrepreneurPoster[0].filename}`
+        : null,
+
+      studentPhoto: req.files?.studentPhoto?.[0]
+        ? `alumni/${req.alumniId}/${req.files.studentPhoto[0].filename}`
+        : null,
+
+      currentPhoto: req.files?.currentPhoto?.[0]
+        ? `alumni/${req.alumniId}/${req.files.currentPhoto[0].filename}`
+        : null,
+    };
+
+    const newAlumni = await Alumni.create({
+      alumniId: req.alumniId,
       firstName,
       lastName,
       email: email.toLowerCase(),
       password: hashedPassword,
       phone,
-      department,
-      graduationYear: Number(graduationYear),
       rollNumber,
-      currentCompany,
+      gender,
+      occupation,
+
+      department,
+      programmeType,
+      degree,
+      batchYear,
+      studyStartYear,
+      studyEndYear,
+
       jobTitle,
-      country,
+      currentCompany,
+      industry,
+      officeContact,
+      officeAddress,
+
+      social: {
+        linkedin,
+        twitter,
+        instagram,
+        facebook,
+        website,
+      },
+
       city,
+      country,
       fullAddress,
+
       location: {
         type: "Point",
         coordinates,
       },
-      linkedin,
+
+      files,
+
       isApproved: false,
       isAdmin: false,
     });
 
-    await newAlumni.save();
+    const token = generateToken({
+      id: newAlumni._id,
+      email: newAlumni.email,
+      role: "alumni",
+      type: "alumni",
+    });
 
-    // Issue a token so they can poll /profile for approval status
-    const token = generateToken(newAlumni);
-
-    // ── Set JWT as HttpOnly cookie ───────────────────────────────
     res.cookie("token", token, COOKIE_OPTIONS);
 
     res.status(201).json({
       message: "Registration successful! Waiting for admin approval.",
       alumni: {
         _id: newAlumni._id,
+        alumniId: newAlumni.alumniId,
         firstName: newAlumni.firstName,
         lastName: newAlumni.lastName,
         email: newAlumni.email,
+        role: newAlumni.role,
         isApproved: newAlumni.isApproved,
-        isAdmin: newAlumni.isAdmin,
       },
     });
   } catch (error) {
     console.error("Register Error:", error);
-    res
-      .status(500)
-      .json({ message: "Registration failed", error: error.message });
+
+    res.status(500).json({
+      message: "Registration failed",
+      error: error.message,
+    });
   }
 };
 
 // @route   POST /api/auth/login
-// ✅ FIX: Returns 401 (not 403) for unapproved so frontend error handler works uniformly.
-//         Also returns isApproved flag so frontend can show correct message.
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res.status(400).json({
+        message: "Email and password required",
+      });
     }
 
-    const alumni = await Alumni.findOne({ email: email.toLowerCase() }).select(
-      "+password",
-    );
+    // ===============================
+    // 1. Check Admin Users First
+    // ===============================
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    }).select("+password");
+
+    if (user) {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          message: "Invalid email or password",
+        });
+      }
+
+      const token = generateToken({
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        type: "user",
+      });
+
+      res.cookie("token", token, COOKIE_OPTIONS);
+
+      return res.json({
+        message: "Admin login successful",
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          department: user.department,
+          isAdmin: true,
+          isApproved: user.isActive,
+        },
+      });
+    }
+
+    // ===============================
+    // 2. Check Alumni
+    // ===============================
+    const alumni = await Alumni.findOne({
+      email: email.toLowerCase(),
+    }).select("+password");
 
     if (!alumni) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, alumni.password);
+
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
 
-    // ✅ FIX: Don't block login for unapproved — return isApproved:false
-    // Frontend will redirect to /alumni/register (pending page) via ProtectedRoute
-    const token = generateToken(alumni);
+    const token = generateToken({
+      id: alumni._id,
+      email: alumni.email,
+      role: "alumni",
+      type: "alumni",
+    });
 
-    // ── Set JWT as HttpOnly cookie ───────────────────────────────
     res.cookie("token", token, COOKIE_OPTIONS);
 
     res.json({
       message: alumni.isApproved
         ? "Login successful"
         : "Login successful. Awaiting admin approval.",
-      alumni: {
+
+      user: {
         _id: alumni._id,
         firstName: alumni.firstName,
         lastName: alumni.lastName,
         email: alumni.email,
+        role: "alumni",
         isApproved: alumni.isApproved,
-        isAdmin: alumni.isAdmin,
+        isAdmin: false,
       },
     });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ message: "Login failed", error: error.message });
+
+    res.status(500).json({
+      message: "Login failed",
+      error: error.message,
+    });
   }
 };
 
 // @route   GET /api/auth/profile
 exports.getProfile = async (req, res) => {
   try {
-    const alumni = await Alumni.findById(req.user.id).select("-password");
+    const { id, type, role } = req.user;
 
-    if (!alumni) {
-      return res.status(404).json({ message: "Alumni not found" });
+    let profile;
+
+    if (type === "user") {
+      profile = await User.findById(id).select("-password");
+      return res.json({
+        success: true,
+        user: {
+          ...profile.toObject(),
+          isAdmin: true,
+          isApproved: profile.isActive,
+        },
+      });
+    } else {
+      profile = await Alumni.findById(id).select("-password");
+      return res.json({
+        success: true,
+        user: {
+          ...profile.toObject(),
+          role: "alumni",
+          isAdmin: false,
+        },
+      });
     }
-
-    res.json({ message: "Profile retrieved successfully", alumni });
   } catch (error) {
-    console.error("Get Profile Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Failed to fetch profile",
+    });
   }
 };
 
@@ -229,19 +379,23 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     otpStore.set(email.toLowerCase(), { otp, expiresAt });
 
-    // ─── TODO: Replace this console.log with actual email sending ───
-    // Example using nodemailer:
-    //   const transporter = nodemailer.createTransport({ ... });
-    //   await transporter.sendMail({
-    //     to: email,
-    //     subject: "PSG Alumni - Password Reset OTP",
-    //     html: `<p>Your OTP is <strong>${otp}</strong>. Valid for 10 minutes.</p>`
-    //   });
-    console.log(`\n📧 OTP for ${email}: ${otp} (expires in 10 minutes)\n`);
+    //console.log(`\n📧 OTP for ${email}: ${otp} (expires in 10 minutes)\n`);
+
+    await transporter.sendMail({
+      from: `"PSG Alumni"<${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset OTP",
+      html: `
+        <h2>Pasword Reset Request</h2>
+        <p>Your OTP is:</p>
+        <h1>${otp}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+      `,
+    });
 
     res.json({ message: `OTP sent to ${email}. Check your inbox.` });
   } catch (error) {
@@ -251,7 +405,6 @@ exports.forgotPassword = async (req, res) => {
 };
 
 // @route   POST /api/auth/verify-otp
-// ✅ NEW: Verifies the OTP before allowing password reset
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -289,7 +442,6 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // @route   POST /api/auth/reset-password
-// ✅ NEW: Resets password after OTP verification
 exports.resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;

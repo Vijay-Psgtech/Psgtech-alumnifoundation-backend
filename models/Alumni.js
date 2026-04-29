@@ -1,17 +1,20 @@
-// models/Alumni.js
 const mongoose = require("mongoose");
 
-const alumniSchema = new mongoose.Schema(
+const AlumniSchema = new mongoose.Schema(
   {
-    // Personal Information
+    alumniId: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    // Basic Info
     firstName: {
       type: String,
-      required: [true, "First name is required"],
+      required: true,
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
       trim: true,
     },
     email: {
@@ -34,26 +37,44 @@ const alumniSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    linkedin: {
-      type: String,
-      trim: true,
-    },
-
-    // Academic Information
-    department: {
-      type: String,
-      required: [true, "Department is required"],
-    },
-    graduationYear: {
-      type: Number,
-      required: [true, "Graduation year is required"],
-    },
     rollNumber: {
       type: String,
       trim: true,
     },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+    },
+    occupation: {
+      type: String,
+      trim: true,
+    },
 
-    // Professional Information
+    // Education
+    department: {
+      type: String,
+      required: [true, "Department is required"],
+    },
+    programmeType: {
+      type: String,
+      trim: true,
+    },
+    degree: {
+      type: String,
+      trim: true,
+    },
+    batchYear: {
+      type: String,
+      required: [true, "Batch year is required"],
+    },
+    studyStartYear: {
+      type: String,
+    },
+    studyEndYear: {
+      type: String,
+    },
+
+    // Employment
     currentCompany: {
       type: String,
       trim: true,
@@ -61,6 +82,31 @@ const alumniSchema = new mongoose.Schema(
     jobTitle: {
       type: String,
       trim: true,
+    },
+    industry: {
+      type: String,
+      trim: true,
+    },
+    officeContact: {
+      type: String,
+      trim: true,
+    },
+    officeAddress: {
+      line1: String,
+      line2: String,
+      city: String,
+      state: String,
+      pincode: String,
+      country: String,
+    },
+
+    // Social Links
+    social: {
+      linkedin: String,
+      twitter: String,
+      instagram: String,
+      facebook: String,
+      website: String,
     },
 
     // Location Information (for Alumni Map)
@@ -80,6 +126,29 @@ const alumniSchema = new mongoose.Schema(
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
 
+    // Files Upload
+    files: {
+      businessCard: {
+        type: String,
+      },
+
+      idCard: {
+        type: String,
+      },
+
+      entrepreneurPoster: {
+        type: String,
+      },
+
+      studentPhoto: {
+        type: String,
+      },
+
+      currentPhoto: {
+        type: String,
+      },
+    },
+
     // Status
     isApproved: {
       type: Boolean,
@@ -89,6 +158,8 @@ const alumniSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    profileImage: { type: String },
 
     // Timestamps
     createdAt: {
@@ -105,8 +176,9 @@ const alumniSchema = new mongoose.Schema(
   },
 );
 
-// ✅ FIXED: Remove duplicate indexes - only use schema.index()
-alumniSchema.index({ isApproved: 1 });
-alumniSchema.index({ country: 1, city: 1 });
+AlumniSchema.index({ location: "2dsphere" }); // Geospatial index for location
+AlumniSchema.index({ batchYear: 1 });
+AlumniSchema.index({ department: 1 });
+AlumniSchema.index({ isApproved: 1 }); // Index for filtering approved alumni
 
-module.exports = mongoose.model("Alumni", alumniSchema);
+module.exports = mongoose.model("Alumni", AlumniSchema);

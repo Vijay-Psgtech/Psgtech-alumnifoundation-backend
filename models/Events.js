@@ -9,11 +9,25 @@ const eventSchema = new mongoose.Schema(
     venue: { type: String, required: true },
     description: { type: String, required: true },
     longDescription: { type: String },
-    status: { type: String, enum: ["upcoming", "completed"], default: "upcoming" },
+    status: {
+      type: String,
+      enum: ["upcoming", "completed"],
+      default: "upcoming",
+    },
     attendees: { type: Number, default: 0 },
     category: {
       type: String,
-      enum: ["Awards", "Lecture", "Sports", "Memorial", "Congress", "Workshop", "Networking", "Cultural", "Other"],
+      enum: [
+        "Awards",
+        "Lecture",
+        "Sports",
+        "Memorial",
+        "Congress",
+        "Workshop",
+        "Networking",
+        "Cultural",
+        "Other",
+      ],
       default: "Other",
     },
     highlight: { type: Boolean, default: false },
@@ -33,10 +47,11 @@ const eventSchema = new mongoose.Schema(
       },
     ],
     highlights: [String],
+    imageUrl: { type: String },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Event", eventSchema);

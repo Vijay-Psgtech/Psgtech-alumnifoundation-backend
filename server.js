@@ -1,8 +1,8 @@
-const express      = require("express");
-const cors         = require("cors");
+const express = require("express");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const dotenv       = require("dotenv");
-const connectDB    = require("./config/db");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
 
 dotenv.config();
 
@@ -20,32 +20,33 @@ const allowedOrigins = [
   "http://localhost:5000",
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 
-
 // ── Health check ─────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
-  res.json({ message: "Server is running", status: "OK" })
+  res.json({ message: "Server is running", status: "OK" }),
 );
 
 // ── Routes ───────────────────────────────────────────────────────
 // Auth: register, login, forgot-password, verify-otp, reset-password, profile
-app.use("/api/auth",             require("./routes/auth"));
+app.use("/api/auth", require("./routes/auth"));
 
 // ✅ NEW: DEPARTMENTS API (Dynamic departments management)
 app.use("/api/departments", require("./routes/departments"));
@@ -54,22 +55,22 @@ app.use("/api/departments", require("./routes/departments"));
 app.use("/api/alumni/chapters", require("./routes/chapters"));
 
 // Alumni directory (public + protected profile update)
-app.use("/api/alumni",           require("./routes/alumni"));
+app.use("/api/alumni", require("./routes/alumni"));
 
 // Admin simple routes (approve/reject/stats) — uses Alumni model + isAdmin flag
-app.use("/api/admin",            require("./routes/admin"));
+app.use("/api/admin", require("./routes/admin"));
 
 // Admin dashboard (full alumni mgmt + donations + stats)
-app.use("/api/admin/dashboard",  require("./routes/adminDash"));
+app.use("/api/admin/dashboard", require("./routes/adminDash"));
 
 // Donations (public create + protected mine + admin all)
-app.use("/api/donations",        require("./routes/donations"));
+app.use("/api/donations", require("./routes/donations"));
 
 // ── NEW: EVENTS API (Create, Read, Update, Delete) ───────────────
-app.use("/api/events",           require("./routes/events"));
+app.use("/api/events", require("./routes/events"));
 
 // ── NEW: ALBUMS API (Create, Read, Update, Delete) ───────────────
-app.use("/api/albums",           require("./routes/albums"));
+app.use("/api/albums", require("./routes/albums"));
 
 // ── NEW: NEWSLETTERS API (Create, Read, Update, Delete) ───────────────
 app.use("/api/newsletters", require("./routes/newsletters"));
@@ -83,10 +84,11 @@ app.use("/api/reports", require("./routes/adminReports"));
 // User management (Admin only)
 app.use("/api/users", require("./routes/users"));
 
-
 // ── 404 handler ──────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
+  res
+    .status(404)
+    .json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
 // ── Error handler ────────────────────────────────────────────────

@@ -21,11 +21,6 @@ const departmentSchema = new mongoose.Schema(
       enum: ["UG", "PG"],
       required: [true, "Programme type is required"],
     },
-    fundingType: {
-      type: String,
-      enum: ["Aided", "SF"],
-      required: [true, "Funding type is required"],
-    },
     description: {
       type: String,
       trim: true,
